@@ -101,13 +101,24 @@ const SymptomChecker = () => {
                             </div>
                         )}
 
-                        {doctors.length > 0 && (
+                        {doctors.length > 0 ? (
                             <div className="card">
-                                <h3>Available Doctors</h3>
+                                <h3>Recommended {prediction.specialization} Specialists</h3>
+                                <p className="text-gray-500 mb-4">
+                                    Based on your symptoms, we recommend consulting with these {prediction.specialization} specialists
+                                </p>
                                 <div className="doctors-list">
                                     {doctors.map((doc, i) => (
-                                        <DoctorCard key={i} doctor={doc} />
+                                        <DoctorCard key={i} doctor={doc} prediction={prediction} />
                                     ))}
+                                </div>
+                            </div>
+                        ) : prediction && (
+                            <div className="card">
+                                <div className="no-doctors-message">
+                                    <h3>No {prediction.specialization} Specialists Available</h3>
+                                    <p>Currently, there are no {prediction.specialization} doctors available for booking. 
+                                    Please contact our reception or try again later.</p>
                                 </div>
                             </div>
                         )}
@@ -119,21 +130,35 @@ const SymptomChecker = () => {
 };
 
 // Doctor Card Component
-const DoctorCard = ({ doctor }) => {
+const DoctorCard = ({ doctor, prediction }) => {
     const navigate = useNavigate();
     return (
         <div className="doctor-card">
+            {prediction && (
+                <div className="recommended-badge">
+                    ✓ Recommended Specialist
+                </div>
+            )}
             <div className="doctor-avatar">
                 <FaUser />
             </div>
             <div className="doctor-info">
                 <h4>Dr. {doctor.name}</h4>
-                <p className="specialization">{doctor.specialization}</p>
-                <p className="experience">{doctor.experience || 'N/A'} experience</p>
-                <p className="fee">₹{doctor.consultation_fee || '500'} consultation</p>
+                <p className="specialization">
+                    <strong>{doctor.specialization}</strong>
+                </p>
+                <p className="experience">{doctor.experience || 'Experienced'}</p>
+                {doctor.consultation_fee && (
+                    <p className="fee">₹{doctor.consultation_fee} consultation</p>
+                )}
+                {prediction && (
+                    <p className="match-info">
+                        Specializes in treating {prediction.disease}
+                    </p>
+                )}
             </div>
             <button className="btn btn-primary btn-sm" onClick={() => navigate(`/patient/book/${doctor._id}`)}>
-                Book Now
+                Book Appointment
             </button>
         </div>
     );
@@ -232,6 +257,8 @@ const BookAppointment = () => {
     const [selectedDoctor, setSelectedDoctor] = useState(null);
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
+    const [availableSlots, setAvailableSlots] = useState([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
     const [notes, setNotes] = useState('');
     const [loading, setLoading] = useState(false);
     const { getToken } = useAuth();
@@ -240,6 +267,15 @@ const BookAppointment = () => {
     useEffect(() => {
         fetchDoctors();
     }, []);
+
+    useEffect(() => {
+        if (selectedDoctor && date) {
+            fetchAvailableSlots();
+        } else {
+            setAvailableSlots([]);
+            setTime('');
+        }
+    }, [selectedDoctor, date]);
 
     const fetchDoctors = async () => {
         try {
@@ -251,6 +287,28 @@ const BookAppointment = () => {
             }
         } catch (error) {
             console.error('Failed to fetch doctors');
+        }
+    };
+
+    const fetchAvailableSlots = async () => {
+        setLoadingSlots(true);
+        setTime('');
+        try {
+            const response = await axios.get(
+                `${API_URL}/doctor/available-slots/${selectedDoctor}/${date}`
+            );
+            if (response.data.success) {
+                setAvailableSlots(response.data.slots || []);
+                if (response.data.slots.length === 0) {
+                    toast.info('No available slots for this date');
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch slots:', error);
+            setAvailableSlots([]);
+            toast.error(error.response?.data?.message || 'Failed to load available slots');
+        } finally {
+            setLoadingSlots(false);
         }
     };
 
@@ -288,40 +346,136 @@ const BookAppointment = () => {
                 <form onSubmit={handleBook}>
                     <div className="form-group">
                         <label className="form-label">Select Doctor *</label>
-                        <select className="form-select" value={selectedDoctor || ''} onChange={(e) => setSelectedDoctor(e.target.value)}>
+                        <select 
+                            className="form-select" 
+                            value={selectedDoctor || ''} 
+                            onChange={(e) => {
+                                setSelectedDoctor(e.target.value);
+                                setTime('');
+                            }}
+                        >
                             <option value="">Choose a doctor</option>
                             {doctors.map((doc) => (
-                                <option key={doc._id} value={doc._id}>Dr. {doc.name} - {doc.specialization}</option>
+                                <option key={doc._id} value={doc._id}>
+                                    Dr. {doc.name} - {doc.specialization}
+                                </option>
                             ))}
                         </select>
                     </div>
+                    
                     <div className="form-row">
                         <div className="form-group">
                             <label className="form-label">Date *</label>
-                            <input type="date" className="form-input" value={date} onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label">Time *</label>
-                            <select className="form-select" value={time} onChange={(e) => setTime(e.target.value)}>
-                                <option value="">Select time</option>
-                                <option value="09:00 AM">09:00 AM</option>
-                                <option value="10:00 AM">10:00 AM</option>
-                                <option value="11:00 AM">11:00 AM</option>
-                                <option value="02:00 PM">02:00 PM</option>
-                                <option value="03:00 PM">03:00 PM</option>
-                                <option value="04:00 PM">04:00 PM</option>
-                            </select>
+                            <input 
+                                type="date" 
+                                className="form-input" 
+                                value={date} 
+                                onChange={(e) => {
+                                    setDate(e.target.value);
+                                    setTime('');
+                                }} 
+                                min={new Date().toISOString().split('T')[0]}
+                                disabled={!selectedDoctor}
+                            />
+                            {!selectedDoctor && (
+                                <p className="help-text">Please select a doctor first</p>
+                            )}
                         </div>
                     </div>
+
+                    {selectedDoctor && date && (
+                        <div className="form-group">
+                            <label className="form-label">Available Time Slots *</label>
+                            {loadingSlots ? (
+                                <div className="slots-loading">
+                                    <FaSpinner className="spin" /> Loading available slots...
+                                </div>
+                            ) : availableSlots.length > 0 ? (
+                                <div className="time-slots-grid">
+                                    {availableSlots.map((slot) => (
+                                        <button
+                                            key={slot}
+                                            type="button"
+                                            className={`time-slot ${time === slot ? 'selected' : ''}`}
+                                            onClick={() => setTime(slot)}
+                                        >
+                                            {slot}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="no-slots-message">
+                                    <p>No available slots for this date. Please select another date.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
                     <div className="form-group">
                         <label className="form-label">Notes (Optional)</label>
-                        <textarea className="form-input" placeholder="Any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+                        <textarea 
+                            className="form-input" 
+                            placeholder="Any additional notes..." 
+                            value={notes} 
+                            onChange={(e) => setNotes(e.target.value)} 
+                            rows={3} 
+                        />
                     </div>
-                    <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-                        {loading ? <FaSpinner className="spin" /> : 'Confirm Booking'}
+                    <button type="submit" className="btn btn-primary btn-lg" disabled={loading || !time}>
+                        {loading ? <><FaSpinner className="spin" /> Booking...</> : 'Book Appointment'}
                     </button>
                 </form>
             </div>
+
+            <style jsx>{`
+                .time-slots-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                    gap: 10px;
+                    margin-top: 10px;
+                }
+
+                .time-slot {
+                    padding: 12px 16px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    background: white;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    font-weight: 500;
+                }
+
+                .time-slot:hover {
+                    border-color: #4CAF50;
+                    background-color: #f5f5f5;
+                }
+
+                .time-slot.selected {
+                    border-color: #4CAF50;
+                    background-color: #4CAF50;
+                    color: white;
+                }
+
+                .slots-loading {
+                    padding: 20px;
+                    text-align: center;
+                    color: #666;
+                }
+
+                .no-slots-message {
+                    padding: 20px;
+                    background-color: #fff3cd;
+                    border: 1px solid #ffc107;
+                    border-radius: 8px;
+                    color: #856404;
+                }
+
+                .help-text {
+                    font-size: 14px;
+                    color: #666;
+                    margin-top: 5px;
+                }
+            `}</style>
         </div>
     );
 };

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { FaHeartbeat, FaCalendarAlt, FaUsers, FaCheck, FaTimes, FaSignOutAlt, FaUser, FaClock, FaChartBar } from 'react-icons/fa';
+import { FaHeartbeat, FaCalendarAlt, FaUsers, FaCheck, FaTimes, FaSignOutAlt, FaUser, FaClock, FaChartBar, FaCog } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { useAuth, API_URL } from '../App';
+import DoctorAvailability from './DoctorAvailability';
 import './Dashboard.css';
 
 // Appointments Component
@@ -207,6 +208,7 @@ const DoctorDashboard = () => {
                 <nav className="sidebar-nav">
                     <Link to="/doctor" className="nav-item"><FaChartBar /> Dashboard</Link>
                     <Link to="/doctor/appointments" className="nav-item"><FaCalendarAlt /> Appointments</Link>
+                    <Link to="/doctor/availability" className="nav-item"><FaCog /> Availability</Link>
                 </nav>
                 <div className="sidebar-footer">
                     <div className="user-info">
@@ -223,6 +225,7 @@ const DoctorDashboard = () => {
                 <Routes>
                     <Route path="/" element={<DoctorStats />} />
                     <Route path="/appointments" element={<DoctorAppointments />} />
+                    <Route path="/availability" element={<DoctorAvailability />} />
                 </Routes>
             </main>
         </div>

@@ -94,6 +94,48 @@ class SymptomLog:
         }
 
 
+class DoctorAvailability:
+    """DoctorAvailability class for managing doctor working hours and schedule"""
+    
+    def __init__(self, doctor_id, working_days=None, time_ranges=None, slot_duration=30):
+        self.doctor_id = doctor_id
+        # working_days: list of day numbers (0=Monday, 6=Sunday)
+        self.working_days = working_days or [0, 1, 2, 3, 4]  # Default: Mon-Fri
+        # time_ranges: list of dicts with 'start' and 'end' times (24-hour format)
+        self.time_ranges = time_ranges or [{"start": "09:00", "end": "17:00"}]
+        # slot_duration: in minutes
+        self.slot_duration = slot_duration
+        self.is_active = True
+        self.created_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+    
+    def to_dict(self):
+        """Convert availability object to dictionary"""
+        return {
+            "doctor_id": self.doctor_id,
+            "working_days": self.working_days,
+            "time_ranges": self.time_ranges,
+            "slot_duration": self.slot_duration,
+            "is_active": self.is_active,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+    
+    @staticmethod
+    def from_dict(data):
+        """Create availability object from dictionary"""
+        availability = DoctorAvailability(
+            doctor_id=data.get('doctor_id'),
+            working_days=data.get('working_days'),
+            time_ranges=data.get('time_ranges'),
+            slot_duration=data.get('slot_duration', 30)
+        )
+        availability.is_active = data.get('is_active', True)
+        availability.created_at = data.get('created_at', datetime.utcnow())
+        availability.updated_at = data.get('updated_at', datetime.utcnow())
+        return availability
+
+
 class AdminLog:
     """AdminLog class for tracking admin actions"""
     

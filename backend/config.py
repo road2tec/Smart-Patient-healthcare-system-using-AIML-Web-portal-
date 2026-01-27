@@ -21,8 +21,17 @@ COLLECTIONS = {
     "admins": "admins",
     "appointments": "appointments",
     "symptoms_logs": "symptoms_logs",
-    "admin_logs": "admin_logs"
+    "admin_logs": "admin_logs",
+    "doctor_availability": "doctor_availability",
+    "otp_verifications": "otp_verifications"
 }
+
+# SMTP Configuration for OTP
+SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
+SMTP_USER = os.getenv('SMTP_USER', 'sagarbawankule334@gmail.com')
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', 'tocivdwjfniqeyad')
+OTP_EXPIRY_MINUTES = int(os.getenv('OTP_EXPIRY_MINUTES', '10'))
 
 # JWT Configuration - from .env
 JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'smart_healthcare_super_secret_key_2024')

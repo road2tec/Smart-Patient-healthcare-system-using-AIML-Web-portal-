@@ -80,16 +80,36 @@ def delete_user(user_id):
         current_user = get_current_user()
         if not is_admin(current_user):
             return jsonify({"success": False, "message": "Access denied"}), 403
+        
         user = db[COLLECTIONS['users']].find_one({"_id": ObjectId(user_id)})
         if not user:
             return jsonify({"success": False, "message": "User not found"}), 404
-        db[COLLECTIONS['users']].update_one({"_id": ObjectId(user_id)}, {"$set": {"is_active": False}})
+        
+        # Prevent admin from deleting themselves
+        if str(user_id) == str(current_user['id']):
+            return jsonify({"success": False, "message": "Cannot delete your own account"}), 400
+        
+        # Delete user from users collection
+        db[COLLECTIONS['users']].delete_one({"_id": ObjectId(user_id)})
+        
+        # Delete from role-specific collections
         if user['role'] == 'doctor':
-            db[COLLECTIONS['doctors']].update_one({"user_id": ObjectId(user_id)}, {"$set": {"is_active": False}})
+            db[COLLECTIONS['doctors']].delete_many({"user_id": ObjectId(user_id)})
+            # Also delete doctor's appointments
+            db[COLLECTIONS['appointments']].delete_many({"doctor_id": ObjectId(user_id)})
         elif user['role'] == 'patient':
-            db[COLLECTIONS['patients']].update_one({"user_id": ObjectId(user_id)}, {"$set": {"is_active": False}})
-        log_action(current_user['id'], 'delete', user['role'], user_id)
-        return jsonify({"success": True, "message": "User deactivated"}), 200
+            db[COLLECTIONS['patients']].delete_many({"user_id": ObjectId(user_id)})
+            # Delete patient's appointments and symptom logs
+            db[COLLECTIONS['appointments']].delete_many({"patient_id": ObjectId(user_id)})
+            db[COLLECTIONS['symptoms_logs']].delete_many({"patient_id": ObjectId(user_id)})
+        
+        log_action(current_user['id'], 'permanent_delete', user['role'], user_id, 
+                   {"email": user.get('email'), "name": user.get('name')})
+        
+        return jsonify({
+            "success": True, 
+            "message": f"{user['role'].capitalize()} permanently deleted successfully"
+        }), 200
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 

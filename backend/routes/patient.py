@@ -28,6 +28,12 @@ def get_current_user():
             return {"id": identity}
     return identity
 
+def safe_str_id(obj_id):
+    """Helper to safely convert ObjectId or any ID to string"""
+    if isinstance(obj_id, ObjectId):
+        return str(obj_id)
+    return obj_id
+
 # Create blueprint
 patient_bp = Blueprint('patient', __name__)
 
@@ -80,6 +86,10 @@ def predict_disease():
             }), 400
         
         symptoms_text = data['symptoms'].lower().strip()
+        print(f"\n{'='*60}")
+        print(f"SYMPTOM PREDICTION DEBUG:")
+        print(f"Raw input: {data['symptoms']}")
+        print(f"Lowercased: {symptoms_text}")
         
         # Reload model if not loaded
         if model is None or vectorizer is None:
@@ -95,8 +105,17 @@ def predict_disease():
         symptoms_list = [s.strip().replace(' ', '_') for s in symptoms_text.split(',')]
         symptoms_processed = ' '.join(symptoms_list)
         
+        print(f"Symptoms list: {symptoms_list}")
+        print(f"Processed for vectorizer: {symptoms_processed}")
+        
         # Transform symptoms using vectorizer
         symptoms_vectorized = vectorizer.transform([symptoms_processed])
+        
+        print(f"Non-zero features: {symptoms_vectorized.nnz}")
+        if symptoms_vectorized.nnz > 0:
+            print(f"Feature indices: {symptoms_vectorized.nonzero()[1]}")
+        else:
+            print("WARNING: No features matched in vocabulary!")
         
         # Predict disease
         prediction = model.predict(symptoms_vectorized)
@@ -136,13 +155,20 @@ def predict_disease():
             "is_available": True
         }, {"password": 0}))
         
-        # Convert ObjectId to string
+        # Convert all ObjectId fields to string for JSON serialization
         for doctor in doctors:
-            doctor['_id'] = str(doctor['_id'])
+            if '_id' in doctor:
+                doctor['_id'] = str(doctor['_id'])
+            if 'user_id' in doctor:
+                doctor['user_id'] = str(doctor['user_id'])
+            # Convert any other ObjectId fields that might exist
+            for key, value in doctor.items():
+                if isinstance(value, ObjectId):
+                    doctor[key] = str(value)
         
         # Log the symptom prediction
         symptom_log = SymptomLog(
-            patient_id=current_user['id'],
+            patient_id=safe_str_id(current_user['id']),
             symptoms_text=symptoms_text,
             symptoms_list=symptoms_list,
             predicted_disease=predicted_disease,
@@ -280,7 +306,7 @@ def book_appointment():
         
         # Create appointment
         appointment = Appointment(
-            patient_id=current_user['id'],
+            patient_id=safe_str_id(current_user['id']),
             doctor_id=data['doctor_id'],
             appointment_date=data['appointment_date'],
             appointment_time=data['appointment_time'],

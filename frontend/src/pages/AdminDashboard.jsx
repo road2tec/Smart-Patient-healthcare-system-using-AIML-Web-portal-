@@ -95,12 +95,15 @@ const UsersManagement = () => {
     };
 
     const deleteUser = async (id) => {
-        if (!window.confirm('Deactivate this user?')) return;
+        if (!window.confirm('⚠️ Are you sure you want to PERMANENTLY DELETE this user? This action cannot be undone and will delete all associated data (appointments, symptom logs, etc.).')) return;
         try {
             const response = await axios.delete(`${API_URL}/admin/delete-user/${id}`, { headers: { Authorization: `Bearer ${getToken()}` } });
-            if (response.data.success) { toast.success('User deactivated'); fetchUsers(); }
+            if (response.data.success) { 
+                toast.success(response.data.message || 'User permanently deleted'); 
+                fetchUsers(); 
+            }
         } catch (error) {
-            toast.error('Failed to deactivate user');
+            toast.error(error.response?.data?.message || 'Failed to delete user');
         }
     };
 

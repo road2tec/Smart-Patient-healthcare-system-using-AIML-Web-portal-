@@ -258,10 +258,28 @@
     background: var(--gray-50);
     border-radius: var(--radius-lg);
     transition: all var(--transition-fast);
+    position: relative;
+    border: 2px solid transparent;
 }
 
 .doctor-card:hover {
     background: var(--primary-50);
+    border-color: var(--primary-200);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.recommended-badge {
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
 
 .doctor-avatar {
@@ -282,18 +300,46 @@
 
 .doctor-info h4 {
     margin-bottom: 0.25rem;
+    color: var(--gray-800);
 }
 
 .doctor-info .specialization {
     color: var(--primary-600);
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.875rem;
+    margin-bottom: 0.25rem;
 }
 
 .doctor-info .experience,
 .doctor-info .fee {
     font-size: 0.8rem;
     color: var(--gray-500);
+    margin-bottom: 0.25rem;
+}
+
+.doctor-info .match-info {
+    font-size: 0.75rem;
+    color: var(--success-600);
+    font-weight: 500;
+    margin-top: 0.5rem;
+    padding: 4px 8px;
+    background: var(--success-50);
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.no-doctors-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.no-doctors-message h3 {
+    color: var(--warning-700);
+    margin-bottom: 0.5rem;
+}
+
+.no-doctors-message p {
+    color: var(--gray-600);
 }
 
 /* Appointments */
