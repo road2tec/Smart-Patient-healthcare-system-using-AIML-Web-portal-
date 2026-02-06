@@ -63,7 +63,7 @@ const AdminOverview = () => {
                 <div className="card">
                     <h3>System Info</h3>
                     <div className="mt-4">
-                        <p><strong>Database:</strong> MongoDB (missing_person)</p>
+                        <p><strong>Database:</strong> MongoDB</p>
                         <p><strong>ML Model:</strong> Multinomial Naive Bayes</p>
                         <p><strong>Status:</strong> <span className="badge badge-success">Active</span></p>
                     </div>
@@ -98,9 +98,9 @@ const UsersManagement = () => {
         if (!window.confirm('⚠️ Are you sure you want to PERMANENTLY DELETE this user? This action cannot be undone and will delete all associated data (appointments, symptom logs, etc.).')) return;
         try {
             const response = await axios.delete(`${API_URL}/admin/delete-user/${id}`, { headers: { Authorization: `Bearer ${getToken()}` } });
-            if (response.data.success) { 
-                toast.success(response.data.message || 'User permanently deleted'); 
-                fetchUsers(); 
+            if (response.data.success) {
+                toast.success(response.data.message || 'User permanently deleted');
+                fetchUsers();
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to delete user');
